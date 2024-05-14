@@ -10,7 +10,7 @@ sudo apt update
 sudo apt install python3.11-venv git docker.io apt-transport-https ca-certificates curl software-properties-common
 ```
 
-### Créer un dossier de projet
+### Créer un dossier de projet et clone du repo
 
 ```shell
 mkdir api_syslog
