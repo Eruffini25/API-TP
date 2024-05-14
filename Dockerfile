@@ -2,9 +2,10 @@ FROM python:3.11
 
 WORKDIR /app
 
+COPY packages /packages
 COPY requirements.txt .
 
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-index --find-links=/packages -r requirements.txt
 
 COPY . .
 
