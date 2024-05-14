@@ -15,7 +15,7 @@ async def create_log(log: LogCreate, db: Session = Depends(get_db)):
         severity=log.severity
     )
     await database.execute(query)
-    return {"message": "Log created successfully"}
+    return {"message": "Log created successfully"} 
 
 @router.get("/logs/{severity}")
 async def read_logs(severity: str, db: Session = Depends(get_db)):
