@@ -9,10 +9,15 @@ mkdir api_syslog
 cd api_syslog
 ```
 
+### Installer prerequis
+
+```shell
+sudo apt install python3.11-venv git
+```
+
 ### Créer et activer un environnement virtuel
 
 ```shell
-sudo apt install python3.11-venv
 python3 -m venv venv
 source venv/bin/activate
 ```
