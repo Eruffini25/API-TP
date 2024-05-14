@@ -12,7 +12,7 @@ cd api_syslog
 ### Installer prerequis
 
 ```shell
-sudo apt install python3.11-venv git
+sudo apt install python3.11-venv git docker
 ```
 
 ### Créer et activer un environnement virtuel
