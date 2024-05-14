@@ -86,3 +86,17 @@ pip install -r requirements.txt
 ```shell
 docker-compose up --build
 ```
+
+#### Si il y a des proxy faire ceci
+
+##### sudo mkdir -p /etc/systemd/system/docker.service.d
+##### sudo nano /etc/systemd/system/docker.service.d/http-proxy.conf
+
+```shell
+[Service]
+Environment="HTTP_PROXY=http://proxy.example.com:8080"
+Environment="HTTPS_PROXY=http://proxy.example.com:8080"
+```
+
+##### sudo systemctl daemon-reload
+##### sudo systemctl restart docker
