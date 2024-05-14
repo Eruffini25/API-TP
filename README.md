@@ -12,6 +12,7 @@ cd api_syslog
 ### Installer prerequis
 
 ```shell
+sudo apt update
 sudo apt install python3.11-venv git docker.io apt-transport-https ca-certificates curl software-properties-common
 ```
 
