@@ -78,7 +78,7 @@ source venv/bin/activate
 ### Installer les dépendances nécessaires
 
 ```shell
-pip install fastapi uvicorn sqlalchemy databases passlib
+pip install -r requirements.txt
 ```
 
 ### Lancer Docker Compose
