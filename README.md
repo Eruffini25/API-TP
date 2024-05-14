@@ -2,6 +2,14 @@
 
 ## I. Initialisation du projet
 
+
+### Installer prerequis
+
+```shell
+sudo apt update
+sudo apt install python3.11-venv git docker.io apt-transport-https ca-certificates curl software-properties-common
+```
+
 ### Créer un dossier de projet
 
 ```shell
@@ -9,13 +17,6 @@ mkdir api_syslog
 cd api_syslog
 git clone https://github.com/Eruffini25/API-TP.git
 cd API-TP
-```
-
-### Installer prerequis
-
-```shell
-sudo apt update
-sudo apt install python3.11-venv git docker.io apt-transport-https ca-certificates curl software-properties-common
 ```
 
 ### Installation et configuration Docker
