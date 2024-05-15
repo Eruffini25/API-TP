@@ -1,48 +1,30 @@
+# routes.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from .models import logs
-from .database import database
+from typing import List
+from . import models, schemas, database
 
 router = APIRouter()
 
+@router.get("/logs/{severity}", response_model=List[schemas.Log])
+def read_logs_by_severity(severity: str, db: Session = Depends(database.get_db)):
+    logs = db.query(models.Log).filter(models.Log.severity == severity).all()
+    if not logs:
+        raise HTTPException(status_code=404, detail="Logs not found")
+    return logs
+
+@router.post("/users/")
+def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
+    db_user = models.User(username=user.username, password=user.password)
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
 @router.post("/logs/")
-async def create_log(log: LogCreate, db: Session = Depends(get_db)):
-    query = logs.insert().values(
-        domain=log.domain,
-        ip_address=log.ip_address,
-        service_name=log.service_name,
-        message=log.message,
-        severity=log.severity
-    )
-    await database.execute(query)
-    return {"message": "Log created successfully"} 
-
-@router.get("/logs/{severity}")
-async def read_logs(severity: str, db: Session = Depends(get_db)):
-    query = logs.select().where(logs.c.severity == severity)
-    return await database.fetch_all(query)
-
-@router.get("/logs/{id}")
-async def read_log(id: int, db: Session = Depends(get_db)):
-    query = logs.select().where(logs.c.id == id)
-    return await database.fetch_one(query)
-
-@router.delete("/logs/{id}")
-async def delete_log(id: int, db: Session = Depends(get_db)):
-    query = logs.delete().where(logs.c.id == id)
-    await database.execute(query)
-    return {"message": "Log deleted successfully"}
-
-@router.put("/logs/{id}")
-async def update_log(id: int, log: LogCreate, db: Session = Depends(get_db)):
-    query = logs.update().where(logs.c.id == id).values(
-        domain=log.domain,
-        ip_address=log.ip_address,
-        service_name=log.service_name,
-        message=log.message,
-        severity=log.severity
-    )
-    await database.execute(query)
-    return {"message": "Log updated successfully"}
-
-app.include_router(router)
+def create_log(log: schemas.LogCreate, db: Session = Depends(database.get_db)):
+    db_log = models.Log(**log.dict())
+    db.add(db_log)
+    db.commit()
+    db.refresh(db_log)
+    return db_log
