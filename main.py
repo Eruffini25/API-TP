@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from . import models
-from .database import engine
-from .routes import router  # Assurez-vous d'importer le routeur correctement
+import models
+from database import engine
+from routes import router  # Assurez-vous d'importer le routeur correctement
 
 # Crée les tables dans la base de données
 models.Base.metadata.create_all(bind=engine)

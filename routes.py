@@ -1,8 +1,10 @@
-# routes.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
-from . import models, schemas, database, auth
+import models
+import schemas
+import database
+import auth
 
 router = APIRouter()
 
@@ -13,7 +15,7 @@ def read_logs_by_severity(severity: str, db: Session = Depends(database.get_db))
         raise HTTPException(status_code=404, detail="Logs not found")
     return logs
 
-@router.post("/users/", response_model=schemas.UserResponse)  # Correction des importations
+@router.post("/users/", response_model=schemas.UserResponse)
 def create_user(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     db_user = db.query(models.User).filter(models.User.username == user.username).first()
     if db_user:
