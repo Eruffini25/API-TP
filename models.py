@@ -1,6 +1,8 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
+from database import Base
+
 
 Base = declarative_base()
 
@@ -13,3 +15,10 @@ class Log(Base):
     message = Column(String)
     severity = Column(String, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+class User(Base):
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    hashed_password = Column(String)   
