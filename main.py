@@ -5,7 +5,7 @@ from sqlalchemy.sql import func
 from pydantic import BaseModel
 from passlib.context import CryptContext
 
-DATABASE_URL = "postgresql://user:password@localhost/dbname"
+DATABASE_URL = "postgresql://user:password@db/dbname"
 
 database = Database(DATABASE_URL)
 metadata = MetaData()
