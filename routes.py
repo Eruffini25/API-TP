@@ -28,3 +28,10 @@ def create_log(log: schemas.LogCreate, db: Session = Depends(database.get_db)):
     db.commit()
     db.refresh(db_log)
     return db_log
+
+@router.get("/logs/info", response_model=List[schemas.Log])
+def read_all_logs(db: Session = Depends(database.get_db)):
+    logs = db.query(models.Log).all()
+    if not logs:
+        raise HTTPException(status_code=404, detail="Logs not found")
+    return logs
