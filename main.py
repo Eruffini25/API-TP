@@ -1,20 +1,16 @@
+# main.py
 from fastapi import FastAPI
-
-from . import models
-from .database import engine
-from .routes import router as log_router
-
-# Crée les tables dans la base de données
-models.Base.metadata.create_all(bind=engine)
+from routes import router  # Absolute import
+from database import database  # Absolute import
 
 app = FastAPI()
 
 @app.on_event("startup")
 async def startup():
-    pass 
+    await database.connect()
 
 @app.on_event("shutdown")
 async def shutdown():
-    pass  
+    await database.disconnect()
 
-app.include_router(log_router)
+app.include_router(router)
