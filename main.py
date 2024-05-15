@@ -1,13 +1,13 @@
 from fastapi import FastAPI, Depends, HTTPException, status
-from databases import Database
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, DateTime
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import func
 from pydantic import BaseModel
 from passlib.context import CryptContext
 
 DATABASE_URL = "postgresql://user:password@db/dbname"
 
-database = Database(DATABASE_URL)
+engine = create_engine(DATABASE_URL)
 metadata = MetaData()
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -34,15 +34,18 @@ logs = Table(
     Column("severity", String(20), nullable=False)
 )
 
+metadata.create_all(engine)
+
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
 app = FastAPI()
 
-@app.on_event("startup")
-async def startup():
-    await database.connect()
-
-@app.on_event("shutdown")
-async def shutdown():
-    await database.disconnect()
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 # Pydantic models
 class UserCreate(BaseModel):
@@ -58,33 +61,33 @@ class LogCreate(BaseModel):
 
 # Routes
 @app.post("/users/")
-async def create_user(user: UserCreate):
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
     hashed_password = pwd_context.hash(user.password)
-    query = users.insert().values(username=user.username, password=hashed_password, role="user")
-    await database.execute(query)
+    db.execute(users.insert().values(username=user.username, password=hashed_password, role="user"))
+    db.commit()
     return {"username": user.username, "role": "user"}
 
 @app.post("/logs/")
-async def create_log(log: LogCreate):
-    query = logs.insert().values(
+def create_log(log: LogCreate, db: Session = Depends(get_db)):
+    db.execute(logs.insert().values(
         domain=log.domain,
         ip_address=log.ip_address,
         service_name=log.service_name,
         message=log.message,
         severity=log.severity
-    )
-    await database.execute(query)
+    ))
+    db.commit()
     return {"message": "Log created successfully"}
 
 @app.get("/logs/{severity}")
-async def read_logs(severity: str):
-    query = logs.select().where(logs.c.severity == severity)
-    return await database.fetch_all(query)
+def read_logs(severity: str, db: Session = Depends(get_db)):
+    result = db.execute(logs.select().where(logs.c.severity == severity)).fetchall()
+    return result
 
 @app.get("/logs/{id}")
-async def read_log(id: int):
-    query = logs.select().where(logs.c.id == id)
-    return await database.fetch_one(query)
+def read_log(id: int, db: Session = Depends(get_db)):
+    result = db.execute(logs.select().where(logs.c.id == id)).fetchone()
+    return result
 
 if __name__ == "__main__":
     import uvicorn

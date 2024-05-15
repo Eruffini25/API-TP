@@ -4,3 +4,4 @@ sqlalchemy
 databases
 passlib[bcrypt]
 asyncpg
+psycopg2-binary
