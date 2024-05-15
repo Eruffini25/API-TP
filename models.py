@@ -1,8 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
-from database import Base
-
 
 Base = declarative_base()
 
@@ -15,6 +13,7 @@ class Log(Base):
     message = Column(String)
     severity = Column(String, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
 
 class User(Base):
     __tablename__ = "users"
