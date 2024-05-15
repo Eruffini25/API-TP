@@ -79,6 +79,7 @@ source venv/bin/activate
 
 ```shell
 pip install -r requirements.txt
+pip download -d ~/api_syslog/API-TP/packages -r ~/api_syslog/API-TP/requirements.txt
 ```
 
 ### Lancer Docker Compose
