@@ -42,7 +42,7 @@ class LogBase(BaseModel):
 class LogCreate(LogBase):
     pass
 
-class Log(LogBase):
+class LogSchema(LogBase):
     id: int
     timestamp: datetime
 
@@ -92,9 +92,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
 
-@router.post("/logs/", response_model=schemas.Log)
-def create_log(log: schemas.LogCreate, db: Session = Depends(get_db)):
-    db_log = models.Log(
+@router.post("/logs/", response_model=LogSchema)
+def create_log(log: LogCreate, db: Session = Depends(get_db)):
+    db_log = Log(
         domain=log.domain,
         ip_address=log.ip_address,
         service_name=log.service_name,
@@ -106,14 +106,14 @@ def create_log(log: schemas.LogCreate, db: Session = Depends(get_db)):
     db.refresh(db_log)
     return db_log
 
-@router.get("/logs/info", response_model=List[Log])
+@router.get("/logs/info", response_model=List[LogSchema])
 def read_all_logs(db: Session = Depends(get_db)):
     logs = db.query(Log).all()
     if not logs:
         raise HTTPException(status_code=404, detail="Logs not found")
     return logs
 
-@router.get("/logs/{severity}", response_model=List[Log])
+@router.get("/logs/{severity}", response_model=List[LogSchema])
 def read_logs_by_severity(severity: str, db: Session = Depends(get_db)):
     logs = db.query(Log).filter(Log.severity == severity).all()
     if not logs:
