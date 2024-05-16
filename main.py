@@ -92,9 +92,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(db_user)
     return db_user
 
-@router.post("/logs/")
-def create_log(log: LogCreate, db: Session = Depends(get_db)):
-    db_log = Log(
+@router.post("/logs/", response_model=schemas.Log)
+def create_log(log: schemas.LogCreate, db: Session = Depends(get_db)):
+    db_log = models.Log(
         domain=log.domain,
         ip_address=log.ip_address,
         service_name=log.service_name,
