@@ -1,44 +1,74 @@
-from fastapi import FastAPI, Depends, HTTPException, status
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, DateTime
+from fastapi import FastAPI, Depends, HTTPException, APIRouter
+from sqlalchemy import Column, Integer, String, DateTime, create_engine
+from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.sql import func
 from pydantic import BaseModel
+from datetime import datetime
+from typing import List
+import bcrypt
 from passlib.context import CryptContext
 
-DATABASE_URL = "postgresql://user:password@db/dbname"
-
+# Configuration de la base de données
+DATABASE_URL = "postgresql://user:password@db:5432/dbname"
 engine = create_engine(DATABASE_URL)
-metadata = MetaData()
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
+# Définition des modèles
+class Log(Base):
+    __tablename__ = 'logs'
+    id = Column(Integer, primary_key=True, index=True)
+    domain = Column(String, index=True)
+    ip_address = Column(String, index=True)
+    service_name = Column(String, index=True)
+    message = Column(String)
+    severity = Column(String, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+
+# Schémas Pydantic
+class LogBase(BaseModel):
+    domain: str
+    ip_address: str
+    service_name: str
+    message: str
+    severity: str
+
+class LogCreate(LogBase):
+    pass
+
+class Log(LogBase):
+    id: int
+    timestamp: datetime
+
+    class Config:
+        orm_mode: True
+
+class UserBase(BaseModel):
+    username: str
+
+class UserCreate(UserBase):
+    password: str
+
+class UserResponse(UserBase):
+    id: int
+
+    class Config:
+        orm_mode: True
+
+# Fonctions d'authentification et utilitaires
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# Models
-users = Table(
-    "users",
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("username", String(50), unique=True, nullable=False),
-    Column("password", String, nullable=False),
-    Column("role", String(50), nullable=False, default="user")
-)
+def get_password_hash(password):
+    return pwd_context.hash(password)
 
-logs = Table(
-    "logs",
-    metadata,
-    Column("id", Integer, primary_key=True),
-    Column("timestamp", DateTime, default=func.now(), nullable=False),
-    Column("domain", String(100)),
-    Column("ip_address", String(45)),
-    Column("service_name", String(100)),
-    Column("message", String, nullable=False),
-    Column("severity", String(20), nullable=False)
-)
-
-metadata.create_all(engine)
-
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-app = FastAPI()
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
 
 def get_db():
     db = SessionLocal()
@@ -47,48 +77,54 @@ def get_db():
     finally:
         db.close()
 
-# Pydantic models
-class UserCreate(BaseModel):
-    username: str
-    password: str
+# Définition des routes
+router = APIRouter()
 
-class LogCreate(BaseModel):
-    domain: str
-    ip_address: str
-    service_name: str
-    message: str
-    severity: str
-
-# Routes
-@app.post("/users/")
+@router.post("/users/", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    hashed_password = pwd_context.hash(user.password)
-    db.execute(users.insert().values(username=user.username, password=hashed_password, role="user"))
+    db_user = db.query(User).filter(User.username == user.username).first()
+    if db_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
+    hashed_password = get_password_hash(user.password)
+    db_user = User(username=user.username, hashed_password=hashed_password)
+    db.add(db_user)
     db.commit()
-    return {"username": user.username, "role": "user"}
+    db.refresh(db_user)
+    return db_user
 
-@app.post("/logs/")
+@router.post("/logs/")
 def create_log(log: LogCreate, db: Session = Depends(get_db)):
-    db.execute(logs.insert().values(
-        domain=log.domain,
-        ip_address=log.ip_address,
-        service_name=log.service_name,
-        message=log.message,
-        severity=log.severity
-    ))
+    db_log = Log(**log.dict())
+    db.add(db_log)
     db.commit()
+    db.refresh(db_log)
     return {"message": "Log created successfully"}
 
-@app.get("/logs/{severity}")
-def read_logs(severity: str, db: Session = Depends(get_db)):
-    result = db.execute(logs.select().where(logs.c.severity == severity)).fetchall()
-    return result
+@router.get("/logs/info", response_model=List[Log])
+def read_all_logs(db: Session = Depends(get_db)):
+    logs = db.query(Log).all()
+    if not logs:
+        raise HTTPException(status_code=404, detail="Logs not found")
+    return logs
 
-@app.get("/logs/{id}")
-def read_log(id: int, db: Session = Depends(get_db)):
-    result = db.execute(logs.select().where(logs.c.id == id)).fetchone()
-    return result
+@router.get("/logs/{severity}", response_model=List[Log])
+def read_logs_by_severity(severity: str, db: Session = Depends(get_db)):
+    logs = db.query(Log).filter(Log.severity == severity).all()
+    if not logs:
+        raise HTTPException(status_code=404, detail="Logs not found")
+    return logs
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# Création de l'application FastAPI
+app = FastAPI()
+
+Base.metadata.create_all(bind=engine)
+
+@app.on_event("startup")
+async def startup():
+    pass
+
+@app.on_event("shutdown")
+async def shutdown():
+    pass
+
+app.include_router(router)
