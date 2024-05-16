@@ -94,11 +94,17 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/logs/")
 def create_log(log: LogCreate, db: Session = Depends(get_db)):
-    db_log = Log(**log.dict())
+    db_log = Log(
+        domain=log.domain,
+        ip_address=log.ip_address,
+        service_name=log.service_name,
+        message=log.message,
+        severity=log.severity
+    )
     db.add(db_log)
     db.commit()
     db.refresh(db_log)
-    return {"message": "Log created successfully"}
+    return db_log
 
 @router.get("/logs/info", response_model=List[Log])
 def read_all_logs(db: Session = Depends(get_db)):
